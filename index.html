@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>あいま</title>
+<meta name="description" content="AI の返事を待つ数分で、大学の課題をひと区切り進めるアプリ。Mac と Windows に対応。">
+<link rel="icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+/* アプリと同じ「窓の外の空」と「曇りガラスの付箋」。1段組みで、上に入手、下に入れ方 */
+:root{
+  --sky1:#5aa6e8;--sky2:#cfe6f7;--hill:#d9a46b;--ink:#17202e;--ink2:#465066;--ink3:#7a8398;
+  --glass:rgba(255,255,255,.62);--glass-hi:rgba(255,255,255,.85);--edge:rgba(255,255,255,.8);--line:rgba(30,40,70,.12);
+  --accent:#d0582f;--ok:#1f7a5a;
+  --head:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Noto Sans JP",sans-serif;
+  --body:"Noto Sans JP","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root{--sky1:#0d1834;--sky2:#2b3a66;--hill:#3a2f2a;--ink:#eef2fb;--ink2:#c0c8da;--ink3:#8f98ad;--glass:rgba(26,32,54,.62);--glass-hi:rgba(30,38,64,.88);--edge:rgba(255,255,255,.16);--line:rgba(255,255,255,.12);--accent:#f39a66;--ok:#6fd6ad;color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:var(--body);color:var(--ink);line-height:1.8;background:linear-gradient(180deg,var(--sky1),var(--sky2) 70%);min-height:100vh}
+body::after{content:"";position:fixed;left:-10%;right:-10%;bottom:-30vh;height:55vh;z-index:-1;border-radius:50% 50% 0 0;background:var(--hill);opacity:.55}
+.wrap{max-width:980px;margin:0 auto;padding:48px max(16px,env(safe-area-inset-right,0px)) 80px max(16px,env(safe-area-inset-left,0px))}
+.glass{background:var(--glass);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border:1px solid var(--edge);border-radius:22px;box-shadow:0 18px 44px -20px rgba(10,20,50,.5)}
+header{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+header img{width:68px;height:68px;border-radius:16px;box-shadow:0 10px 24px -10px rgba(0,0,0,.4)}
+h1{font-family:var(--head);font-size:2.6rem;margin:0;line-height:1.1;color:#fff;text-shadow:0 2px 12px rgba(10,30,70,.35)}
+.tag{color:#fff;font-size:1.05rem;margin:.3rem 0 0;text-shadow:0 1px 8px rgba(10,30,70,.4)}
+.hero{margin-top:28px;padding:28px 30px}
+.hero h2{font-family:var(--head);font-size:1.35rem;margin:0 0 .4rem}
+.hero p{margin:.3rem 0;color:var(--ink2)}
+.downloads{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:20px}
+.dl{display:flex;flex-direction:column;gap:6px;padding:18px 18px 16px;border-radius:18px;background:var(--glass-hi);border:1px solid var(--edge);color:var(--ink);text-decoration:none;transition:transform .2s,box-shadow .2s;position:relative}
+.dl:hover{transform:translateY(-3px);box-shadow:0 16px 30px -14px rgba(10,20,50,.5)}
+.dl b{font-family:var(--head);font-size:1.2rem}
+.dl small{color:var(--ink3);font-size:.85rem}
+.dl .btn{margin-top:8px;align-self:flex-start;background:var(--ink);color:var(--bg,#fff);padding:8px 16px;border-radius:999px;font-weight:700;font-size:.92rem}
+@media (prefers-color-scheme: dark){.dl .btn{background:#eef2fb;color:#17202e}}
+.dl.pick{outline:3px solid var(--accent);outline-offset:2px}
+.dl.pick .btn{background:var(--accent);color:#fff}
+.dl .yours{display:none;position:absolute;top:-11px;right:14px;background:var(--accent);color:#fff;font-size:.75rem;font-weight:700;padding:2px 10px;border-radius:999px}
+.dl.pick .yours{display:block}
+.which{font-size:.88rem;color:var(--ink2);margin-top:14px}
+section.card{margin-top:22px;padding:24px 28px}
+section.card h2{font-family:var(--head);font-size:1.25rem;margin:0 0 .6rem}
+.tabs{display:inline-flex;gap:4px;padding:4px;border-radius:999px;background:var(--line);margin-bottom:14px}
+.tabs button{font:inherit;font-size:.92rem;border:0;background:none;color:var(--ink2);padding:6px 16px;border-radius:999px;cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--glass-hi);color:var(--ink);font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.tabs button:focus-visible{outline:2px solid var(--accent)}
+ol.steps{margin:0;padding-left:1.4rem}
+ol.steps li{margin:.5rem 0}
+.mock{margin:.6rem 0 .3rem;max-width:420px;border-radius:14px;background:var(--glass-hi);border:1px solid var(--line);padding:14px 16px;font-size:.86rem;color:var(--ink2)}
+.mock b{display:block;color:var(--ink);font-size:.95rem;margin-bottom:4px}
+.mock .row{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+.mock .row span{padding:3px 12px;border-radius:7px;border:1px solid var(--line);background:var(--glass)}
+.mock .row span.hot{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.mock.win{background:#1e5bb5;color:#e8f0ff;border:0}
+.mock.win b{color:#fff;font-size:1.05rem}
+.mock.win u{color:#fff}
+.mock.win .row span{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff}
+.mock.win .row span.hot{background:#fff;color:#1e5bb5;border-color:#fff}
+.note{font-size:.88rem;color:var(--ink2);margin-top:.8rem}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:6px}
+.grid3 div{padding:12px 14px;border-radius:14px;background:var(--glass-hi);border:1px solid var(--line);font-size:.9rem}
+.grid3 b{display:block;font-family:var(--head);margin-bottom:2px}
+footer{margin-top:28px;text-align:center;color:var(--ink2);font-size:.82rem}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="icon.png" alt="">
+    <div>
+      <h1>あいま</h1>
+      <p class="tag">AI の返事を待つ数分で、課題をひと区切り進める</p>
+    </div>
+  </header>
+
+  <div class="hero glass">
+    <h2>ダウンロード</h2>
+    <p>ChatGPT・Claude・Gemini に質問して返事を待つあいだ、画面の右上に「今できる一歩」がぶら下がります。大学の LMS（Moodle）や Notion から課題を集めて、AI が数分でできる一歩に分けます。</p>
+    <div class="downloads">
+      <a class="dl" id="dl-mac-arm" href="#" data-file="aima-mac-apple.dmg">
+        <span class="yours">あなたのパソコン</span>
+        <b>Mac（Apple のチップ）</b><small>M1・M2・M3・M4 など。2020年末以降の多くの Mac</small><span class="btn">ダウンロード</span>
+      </a>
+      <a class="dl" id="dl-mac-intel" href="#" data-file="aima-mac-intel.dmg">
+        <span class="yours">あなたのパソコン</span>
+        <b>Mac（Intel）</b><small>2020年ごろまでの Mac</small><span class="btn">ダウンロード</span>
+      </a>
+      <a class="dl" id="dl-win" href="#" data-file="aima-windows-setup.exe">
+        <span class="yours">あなたのパソコン</span>
+        <b>Windows</b><small>Windows 10・11（64 ビット）</small><span class="btn">ダウンロード</span>
+      </a>
+    </div>
+    <p class="which" id="which">Mac でどちらか分からないときは、アップルメニュー →「この Mac について」の「チップ」の欄を見てください。「Apple M…」なら Apple のチップ、「Intel」なら Intel です。</p>
+  </div>
+
+  <section class="card glass">
+    <h2>入れ方</h2>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tab-mac" aria-selected="true" aria-controls="pane-mac">Mac</button>
+      <button role="tab" id="tab-win" aria-selected="false" aria-controls="pane-win">Windows</button>
+    </div>
+    <div id="pane-mac" role="tabpanel">
+      <ol class="steps">
+        <li>ダウンロードした <code>.dmg</code> をダブルクリックして開き、「あいま」を「アプリケーション」フォルダにドラッグします。</li>
+        <li>「アプリケーション」の「あいま」をダブルクリックします。1回目だけ、次の確認が出るので「完了」を押します。
+          <div class="mock"><b>Apple は “あいま” を検証できませんでした</b>Mac に損害を与えたり、プライバシーを侵害したりするマルウェアが含まれていないことを検証できませんでした。<div class="row"><span class="hot">完了</span><span>ゴミ箱に入れる</span></div></div></li>
+        <li>アップルメニュー →「システム設定」→「プライバシーとセキュリティ」を開き、いちばん下まで進みます。</li>
+        <li>「“あいま” は Mac を保護するためにブロックされました」の横の「このまま開く」を押し、パスワードを入れてもう一度「このまま開く」を押します。
+          <div class="mock"><b>セキュリティ</b>“あいま” は Mac を保護するためにブロックされました。<div class="row"><span class="hot">このまま開く</span></div></div></li>
+      </ol>
+      <p class="note">この確認は、あいまが Apple の審査を受けていないために出ます。出るのは1回目だけで、2回目からはふつうに開けます。</p>
+    </div>
+    <div id="pane-win" role="tabpanel" hidden>
+      <ol class="steps">
+        <li>ダウンロードした <code>aima-windows-setup.exe</code> をダブルクリックします。</li>
+        <li>青い画面が出たら、「詳細情報」を押し、出てきた「実行」を押します。
+          <div class="mock win"><b>Windows によって PC が保護されました</b>Microsoft Defender SmartScreen は認識されないアプリの起動を停止しました。<br><u>詳細情報</u><div class="row"><span class="hot">実行</span><span>実行しない</span></div></div></li>
+        <li>そのまま入り、あいまが開きます。スタートメニューとデスクトップにも「あいま」ができます。</li>
+      </ol>
+      <p class="note">青い画面は、あいまに Microsoft の証明が付いていないために、1回目だけ出ます。あいまは画面右下のタスクトレイにアイコンが出ます。右クリックで、開く・止める・終了するを選べます。</p>
+    </div>
+  </section>
+
+  <section class="card glass">
+    <h2>開いたら</h2>
+    <p>「はじめの設定」が出るので、画面の案内のとおりに進めてください。3分ほどで終わり、ターミナルは使いません。</p>
+    <div class="grid3">
+      <div><b>課題の取り込み元</b>大学の LMS（Moodle）か Notion を登録します。</div>
+      <div><b>分解に使う AI</b>Claude の Pro / Max なら自動。それ以外の人は、Gemini の API キー（無料）を貼るのがいちばん手軽です。</div>
+      <div><b>待ち時間の見つけ方</b>ブラウザで AI を使う人は、拡張機能を入れます。手順は画面に出ます。</div>
+    </div>
+    <p class="note">LMS の URL・Notion のシークレット・API キーは、あなたのパソコンの中にだけ保存します。課題を分けるときだけ、選んだ AI に課題文と資料を送ります。</p>
+  </section>
+
+  <footer>あいま <span id="ver">0.1.0</span>　・　Mac（macOS 12 以降）・Windows 10 / 11</footer>
+</div>
+
+<script>
+// ダウンロードの置き場所。GitHub のリリースの「最新」を指すので、新しい版を置けばページは直さなくてよい
+const RELEASES = 'https://github.com/thepenguinno1-gif/aima-download/releases/latest/download/'
+for (const a of document.querySelectorAll('.dl')) a.href = RELEASES + a.dataset.file
+
+// 使っているパソコンを見分けて、合うボタンを目立たせる。Mac のチップは見分けられないこともある
+async function detect() {
+  const ua = navigator.userAgent
+  if (/Windows/i.test(ua)) return 'win'
+  if (!/Mac/i.test(ua)) return null
+  try {
+    const v = await navigator.userAgentData?.getHighEntropyValues?.(['architecture'])
+    if (v?.architecture) return v.architecture === 'arm' ? 'mac-arm' : 'mac-intel'
+  } catch {}
+  try {
+    const gl = document.createElement('canvas').getContext('webgl')
+    const ext = gl && gl.getExtension('WEBGL_debug_renderer_info')
+    const r = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : ''
+    if (/Apple M\d|Apple GPU/i.test(r)) return 'mac-arm'
+    if (/Intel|AMD|Radeon/i.test(r)) return 'mac-intel'
+  } catch {}
+  return 'mac'
+}
+const tab = id => {
+  for (const t of ['mac', 'win']) {
+    document.getElementById(`tab-${t}`).setAttribute('aria-selected', String(t === id))
+    document.getElementById(`pane-${t}`).hidden = t !== id
+  }
+}
+document.getElementById('tab-mac').onclick = () => tab('mac')
+document.getElementById('tab-win').onclick = () => tab('win')
+detect().then(k => {
+  if (!k) return
+  const el = document.getElementById({ win: 'dl-win', 'mac-arm': 'dl-mac-arm', 'mac-intel': 'dl-mac-intel' }[k] ?? '')
+  if (el) el.classList.add('pick')
+  tab(k === 'win' ? 'win' : 'mac')
+  if (k === 'mac') document.getElementById('which').style.fontWeight = '700'
+})
+</script>
+</body>
+</html>
